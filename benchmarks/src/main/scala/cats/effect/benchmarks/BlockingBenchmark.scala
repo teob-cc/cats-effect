@@ -21,6 +21,7 @@ import cats.effect.unsafe.implicits.global
 
 import org.openjdk.jmh.annotations._
 
+import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -45,6 +46,15 @@ class BlockingBenchmark {
 
   @Param(Array("1000"))
   var fibers: Int = _
+
+  private[this] val threads = ManagementFactory.getThreadMXBean()
+
+  @Setup(Level.Iteration)
+  def resetThreads(): Unit = threads.resetPeakThreadCount()
+
+  @TearDown(Level.Iteration)
+  def reportThreads(): Unit =
+    println(s"\npeak JVM threads: ${threads.getPeakThreadCount()}")
 
   /*
    * Uses `IO.blocking` around a very tiny region. As things stand, each time
