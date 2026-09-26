@@ -45,6 +45,10 @@ private[unsafe] object BlockOnDetector {
 
   private[this] final val MaxReportedSites = 1024
 
+  // same property IOFiber reads; it decides whether `WorkerThread.currentIOFiber` is kept up to date
+  private[this] final val TrackFiberContext: Boolean =
+    java.lang.Boolean.getBoolean("cats.effect.trackFiberContext")
+
   private[this] val reported = new ConcurrentHashMap[String, java.lang.Boolean]()
   private[this] val reportedCount = new AtomicInteger(0)
 
@@ -62,9 +66,11 @@ private[unsafe] object BlockOnDetector {
 
       val fiber = worker.currentIOFiber
       val fiberTrace =
-        if ((fiber ne null) && TracingConstants.isStackTracing) fiber.captureTrace().pretty
-        else
+        if (!TrackFiberContext || !TracingConstants.isStackTracing)
           "  <unavailable, run with -Dcats.effect.trackFiberContext=true and cats.effect.tracing.mode=cached or full>"
+        else if (fiber eq null)
+          "  <none: the call came from a plain task on the pool, such as a Pekko actor, not a fiber>"
+        else fiber.captureTrace().pretty
 
       System.err.println(mkWarning(worker.getName(), trace, fiberTrace))
     }

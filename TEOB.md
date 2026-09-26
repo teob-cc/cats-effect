@@ -43,6 +43,45 @@ excludeDependencies ++= Seq(
 Do the same for `cats-effect-testkit`, `cats-effect-kernel-testkit` and `cats-effect-laws` if
 you use them.
 
+## Pekko on the Cats Effect pool
+
+`cats-effect-pekko` (JVM, Scala 2.12 / 2.13 / 3, Pekko 1.7) runs Pekko's default dispatcher on
+the Cats Effect compute pool, so actors and fibers share one set of CPU threads:
+
+```scala
+libraryDependencies += "cc.teob" %% "cats-effect-pekko" % catsEffectTeob
+```
+
+```scala
+import cats.effect.{IO, IOApp}
+import cats.effect.pekko.PekkoCatsEffect
+
+object Main extends IOApp.Simple {
+  val run = PekkoCatsEffect.actorSystem("app").use { system =>
+    IO.never // start actors with `system` here
+  }
+}
+```
+
+- `actorSystem` binds the default dispatcher to the runtime it runs on and terminates the
+  `ActorSystem` when the resource is released. The Cats Effect runtime is borrowed: Pekko
+  shutting a dispatcher down (including an idle one after `shutdown-timeout`) never stops it.
+- To configure it by hand instead, set
+  `pekko.actor.default-dispatcher.executor = "cats.effect.pekko.CatsEffectExecutorServiceConfigurator"`;
+  it then uses `IORuntime.global`.
+- `internal-dispatcher` keeps its own threads, so blocking in user actors can't starve
+  clustering or remoting.
+- Actors that block should get their own dispatcher, e.g. on JDK 21+:
+  ```hocon
+  blocking-dispatcher {
+    executor = "virtual-thread-executor"
+    throughput = 1
+  }
+  ```
+- `blocking {}` or `Await` inside an actor on the Cats Effect pool goes through the worker's
+  blocker handoff, like in a fiber, and `-Dcats.effect.detectBlockOn=true` reports the actor's
+  stack for it.
+
 ## Releasing
 
 Run the **Release cc.teob to Sonatype** workflow from the Actions tab with a version such as
@@ -69,5 +108,6 @@ git pull upstream series/3.x   # merge upstream into the fork's series/3.x
 git push
 ```
 
-All fork-specific build changes are in `project/TeobFork.scala`,
-`.github/workflows/teob-release.yml` and this file, so `build.sbt` does not conflict.
+All fork-specific build changes are in `project/TeobFork.scala`, `teob.sbt` (fork-only modules
+such as `cats-effect-pekko`), `.github/workflows/teob-release.yml` and this file, so `build.sbt`
+does not conflict.
