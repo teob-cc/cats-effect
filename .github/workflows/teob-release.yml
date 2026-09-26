@@ -71,13 +71,14 @@ jobs:
 
       - name: Run tests
         if: inputs.run_tests
-        run: sbt '++ 2.13' testsJVM/test ioAppTestsJVM/test
+        run: sbt '++ 2.13' testsJVM/test ioAppTestsJVM/test pekko/test
 
+      # tlRelease plus the fork-only modules from teob.sbt, which the upstream root doesn't aggregate
       - name: Publish (all Scala versions and platforms) and release
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: sbt tlRelease
+        run: sbt +mimaReportBinaryIssues +publish +pekko/publish tlSonatypeBundleReleaseIfRelevant
 
       - name: Tag release
         run: |
