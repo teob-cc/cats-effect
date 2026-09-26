@@ -5,7 +5,8 @@ runtime features, published as `cc.teob` for wider testing. Artifact names, pack
 binary API are the same as upstream: MiMa checks every release against the `org.typelevel`
 releases, so it is a drop-in replacement.
 
-Branch `teob/3.x` is upstream `series/3.x` plus the fork's commits.
+The fork's `series/3.x` is upstream `series/3.x` plus the fork's commits; work and releases
+happen directly on it.
 
 ## Features
 
@@ -61,9 +62,11 @@ It uses these `teob-cc` organisation secrets:
 
 ## Syncing with upstream
 
+Use **Sync fork** on GitHub, or locally:
+
 ```sh
-git fetch upstream
-git rebase upstream/series/3.x teob/3.x   # or merge
+git pull upstream series/3.x   # merge upstream into the fork's series/3.x
+git push
 ```
 
 All fork-specific build changes are in `project/TeobFork.scala`,
