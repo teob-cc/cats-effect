@@ -28,6 +28,9 @@ import java.util.concurrent.TimeUnit
  *
  * benchmarks/Jmh/run -i 10 -wi 10 -f 2 -t 1 cats.effect.benchmarks.BlockingBenchmark
  *
+ * To compare against virtual-thread blocking (JDK 21+), append
+ * `-jvmArgsAppend -Dcats.effect.virtualBlocking=true`.
+ *
  * Which means "10 iterations", "10 warm-up iterations", "2 forks", "1 thread". Please note that
  * benchmarks should be usually executed at least in 10 iterations (as a rule of thumb), but
  * more is better.
@@ -39,6 +42,9 @@ class BlockingBenchmark {
 
   @Param(Array("10000"))
   var size: Int = _
+
+  @Param(Array("1000"))
+  var fibers: Int = _
 
   /*
    * Uses `IO.blocking` around a very tiny region. As things stand, each time
@@ -86,6 +92,15 @@ class BlockingBenchmark {
 
     IO.blocking(loop(0).unsafeRunSync()).unsafeRunSync()
   }
+
+  /*
+   * Many fibers blocking at the same time for a short while, e.g. a JDBC pool under load.
+   * Each concurrent `IO.blocking` needs its own thread: a platform blocker by default, a
+   * virtual thread with `-Dcats.effect.virtualBlocking=true`.
+   */
+  @Benchmark
+  def concurrent(): Unit =
+    IO.blocking(Thread.sleep(1L)).parReplicateA_(fibers).unsafeRunSync()
 
   /*
    * Cedes after every blocking operation.
