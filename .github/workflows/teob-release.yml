@@ -32,6 +32,9 @@ jobs:
     timeout-minutes: 180
     env:
       TEOB_VERSION: ${{ inputs.version }}
+      # JDK 8's default code cache fills up during the Scala 3 build ("CodeCache is full.
+      # Compiler has been disabled"), which slows sbt to a crawl
+      SBT_OPTS: -XX:ReservedCodeCacheSize=512m
 
     steps:
       - name: Checkout
