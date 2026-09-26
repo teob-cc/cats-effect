@@ -2,6 +2,10 @@
 // They are not aggregated by the upstream root projects: the release workflow publishes them
 // explicitly, and they are tested with `pekko/test`.
 
+// The fork publishes for Scala 2.13 and 3 only. Filtering upstream's list (instead of
+// hardcoding it) keeps later Scala bumps from build.sbt. teob.sbt loads after build.sbt.
+ThisBuild / crossScalaVersions ~= (_.filterNot(_.startsWith("2.12.")))
+
 val PekkoVersion = "1.7.0"
 // build.sbt's vals are not visible here; keep in step with its MUnitVersion
 val TeobMUnitVersion = "1.1.0"

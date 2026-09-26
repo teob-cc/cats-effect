@@ -45,7 +45,7 @@ you use them.
 
 ## Pekko on the Cats Effect pool
 
-`cats-effect-pekko` (JVM, Scala 2.12 / 2.13 / 3, Pekko 1.7) runs Pekko's default dispatcher on
+`cats-effect-pekko` (JVM, Scala 2.13 / 3, Pekko 1.7) runs Pekko's default dispatcher on
 the Cats Effect compute pool, so actors and fibers share one set of CPU threads:
 
 ```scala
@@ -85,9 +85,11 @@ object Main extends IOApp.Simple {
 ## Releasing
 
 Run the **Release cc.teob to Sonatype** workflow from the Actions tab with a version such as
-`3.7.2-teob.1`. It runs the JVM tests, publishes every module for all Scala versions (2.12,
-2.13, 3) and platforms (JVM, JS, Native) to Sonatype Central, and tags the commit
-`teob-v<version>`.
+`3.7.2-teob.1`. It runs the JVM tests, publishes every module for Scala 2.13 and 3 and all
+platforms (JVM, JS, Native) to Sonatype Central, and tags the commit `teob-v<version>`. Tick
+`dry_run` to build, sign and stage everything without uploading or tagging.
+
+Unlike upstream, the fork does not publish for Scala 2.12 (set in `teob.sbt`).
 
 It uses these `teob-cc` organisation secrets:
 
