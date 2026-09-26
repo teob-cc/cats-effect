@@ -14,6 +14,10 @@ on:
         description: 'Run JVM tests before publishing'
         type: boolean
         default: true
+      dry_run:
+        description: 'Build, sign and stage everything, but do not upload to Central or tag'
+        type: boolean
+        default: false
 
 permissions:
   contents: write # pushes the release tag
@@ -73,14 +77,29 @@ jobs:
         if: inputs.run_tests
         run: sbt '++ 2.13' testsJVM/test ioAppTestsJVM/test pekko/test
 
+      # Like upstream, publish on JDK 8: Scala 2.12 scaladoc can only resolve links to JDK
+      # classes (java.util.concurrent.Executor, ...) there. Tests above run on 21 for Loom.
+      - name: Set up Java 8 for publishing
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: sbt
+
       # tlRelease plus the fork-only modules from teob.sbt, which the upstream root doesn't aggregate
       - name: Publish (all Scala versions and platforms) and release
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: sbt +mimaReportBinaryIssues +publish +pekko/publish tlSonatypeBundleReleaseIfRelevant
+          RELEASE_STEP: ${{ inputs.dry_run && 'show ThisBuild / version' || 'tlSonatypeBundleReleaseIfRelevant' }}
+        run: sbt +mimaReportBinaryIssues +publish +pekko/publish "$RELEASE_STEP"
+
+      - name: List staged artifacts (dry run)
+        if: inputs.dry_run
+        run: find target/sona-staging -name '*.pom' | sed 's|.*/||' | sort
 
       - name: Tag release
+        if: ${{ !inputs.dry_run }}
         run: |
           git tag "teob-v$TEOB_VERSION"
           git push origin "teob-v$TEOB_VERSION"
