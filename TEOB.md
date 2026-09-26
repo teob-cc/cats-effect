@@ -49,9 +49,15 @@ Run the **Release cc.teob to Sonatype** workflow from the Actions tab with a ver
 2.13, 3) and platforms (JVM, JS, Native) to Sonatype Central, and tags the commit
 `teob-v<version>`.
 
-It needs the same organisation secrets as `jacum/pekko-sensors`: `SONATYPE_USER`,
-`SONATYPE_PASSWORD` (a Central portal token with the `cc.teob` namespace), `GPG_SECRET`
-(ASCII-armoured private key) and `GPG_PASS`.
+It uses these `teob-cc` organisation secrets:
+
+- `SONATYPE_USER`, `SONATYPE_PASSWORD`: a Central portal user token from the account that owns
+  the `cc.teob` namespace (verified through a TXT record on `teob.cc`).
+- `GPG_SECRET`, `GPG_PASS`: the dedicated release signing key
+  `teob-cc release signing <release@teob.cc>`, fingerprint
+  `0B21 FAAE CFDD 6334 1495  CCEC 7F12 AC5B 3BB5 6BD1`, expiring 2029-09. The private key only
+  exists in the secret; to rotate, generate a new key, replace both secrets and upload the
+  public key to keyserver.ubuntu.com and keys.openpgp.org.
 
 ## Syncing with upstream
 
