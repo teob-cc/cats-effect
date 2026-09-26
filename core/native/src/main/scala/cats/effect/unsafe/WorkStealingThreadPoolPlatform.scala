@@ -27,6 +27,8 @@ import scala.scalanative.unsafe._
 trait WorkStealingThreadPoolPlatform[P <: AnyRef] extends Scheduler {
   this: WorkStealingThreadPool[P] =>
 
+  private[unsafe] final def virtualBlocking: Boolean = false
+
   // TODO cargo culted from EventLoopExecutorScheduler.scala
   override def nowMicros(): Long =
     if (LinktimeInfo.isFreeBSD || LinktimeInfo.isLinux || LinktimeInfo.isMac) {

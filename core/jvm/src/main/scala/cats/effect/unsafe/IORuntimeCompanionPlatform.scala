@@ -241,12 +241,14 @@ private[unsafe] abstract class IORuntimeCompanionPlatform { this: IORuntime.type
       threadPrefix: String,
       reportFailure: Throwable => Unit
   ): (ExecutionContext, () => Unit) = {
-    val threadCount = new AtomicInteger(0)
-    val executor = Executors.newCachedThreadPool { (r: Runnable) =>
-      val t = new Thread(r)
-      t.setName(s"${threadPrefix}-${threadCount.getAndIncrement()}")
-      t.setDaemon(true)
-      t
+    val executor = VirtualThreads.newVirtualThreadPerTaskExecutor(threadPrefix).getOrElse {
+      val threadCount = new AtomicInteger(0)
+      Executors.newCachedThreadPool { (r: Runnable) =>
+        val t = new Thread(r)
+        t.setName(s"${threadPrefix}-${threadCount.getAndIncrement()}")
+        t.setDaemon(true)
+        t
+      }
     }
     (ExecutionContext.fromExecutor(executor, reportFailure), { () => executor.shutdown() })
   }

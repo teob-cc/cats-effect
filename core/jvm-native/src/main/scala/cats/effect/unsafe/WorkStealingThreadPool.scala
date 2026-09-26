@@ -519,7 +519,9 @@ private[effect] final class WorkStealingThreadPool[P <: AnyRef](
    */
   private[effect] def canExecuteBlockingCode(): Boolean = {
     val thread = Thread.currentThread()
-    if (thread.isInstanceOf[WorkerThread[?]]) {
+    if (virtualBlocking) {
+      false
+    } else if (thread.isInstanceOf[WorkerThread[?]]) {
       val worker = thread.asInstanceOf[WorkerThread[P]]
       worker.canExecuteBlockingCodeOn(this)
     } else {

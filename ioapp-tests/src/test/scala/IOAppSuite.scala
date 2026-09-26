@@ -143,6 +143,8 @@ class IOAppSuite extends FunSuite {
 
   lazy val isJava8 =
     platform == JVM && sys.props.get("java.version").filter(_.startsWith("1.8")).isDefined
+  lazy val javaMajor =
+    sys.props("java.specification.version").stripPrefix("1.").takeWhile(_.isDigit).toInt
   lazy val isWindows = System.getProperty("os.name").toLowerCase.contains("windows")
 
   {
@@ -378,6 +380,28 @@ class IOAppSuite extends FunSuite {
         assert(
           err.contains(
             "[WARNING] A Cats Effect worker thread was detected to be in a blocked state"))
+      }
+
+      test("report blockOn call sites when detection is enabled") {
+        val h = platform("DetectBlockOn", List.empty)
+        assertEquals(h.awaitStatus(), 0)
+        val err = h.stderr()
+        val header = "entered a blocking region via"
+        assert(err.contains(header), err)
+        assert(err.contains("DetectBlockOn$.hiddenBlockingCall"), err)
+        assert(err.contains("apply @ catseffect.examples.DetectBlockOn$"), err)
+        assertEquals(err.split(header, -1).length - 1, 1, err)
+      }
+
+      if (javaMajor >= 21) {
+        test("run IO.blocking on virtual threads when enabled") {
+          val h = platform("VirtualBlocking", List.empty)
+          assertEquals(h.awaitStatus(), 0, h.stderr())
+          val out = h.stdout()
+          assert(out.contains("blocking virtual=true name=io-blocking-"), out)
+          assert(out.contains("interruptible virtual=true"), out)
+          assert(out.contains("after virtual=false name=io-compute-"), out)
+        }
       }
 
       test("shut down WSTP on fatal error without IOApp") {

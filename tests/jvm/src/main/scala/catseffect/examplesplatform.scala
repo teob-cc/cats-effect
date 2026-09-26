@@ -95,4 +95,36 @@ package examples {
     val run =
       IO.cede.foreverM.start >> IO(Thread.sleep(2.seconds.toMillis))
   }
+
+  object DetectBlockOn extends IOApp.Simple {
+
+    // read lazily on the first `blockOn`, so setting it here is early enough
+    System.setProperty("cats.effect.detectBlockOn", "true")
+    System.setProperty("cats.effect.trackFiberContext", "true")
+
+    // stands in for a library which blocks without the caller knowing
+    def hiddenBlockingCall(): Unit =
+      scala.concurrent.blocking(Thread.sleep(10L))
+
+    // the same call site is reported only once
+    val run = IO(hiddenBlockingCall()).replicateA_(5)
+  }
+
+  object VirtualBlocking extends IOApp.Simple {
+
+    // read lazily when the runtime creates its blocking pool, so setting it here is early enough
+    System.setProperty("cats.effect.virtualBlocking", "true")
+
+    def isVirtual(t: Thread): Boolean =
+      classOf[Thread].getMethod("isVirtual").invoke(t).asInstanceOf[Boolean]
+
+    val run = for {
+      blocker <- IO.blocking(Thread.currentThread())
+      interruptible <- IO.interruptible(Thread.currentThread())
+      after <- IO(Thread.currentThread())
+      _ <- IO.println(s"blocking virtual=${isVirtual(blocker)} name=${blocker.getName}")
+      _ <- IO.println(s"interruptible virtual=${isVirtual(interruptible)}")
+      _ <- IO.println(s"after virtual=${isVirtual(after)} name=${after.getName}")
+    } yield ()
+  }
 }

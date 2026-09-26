@@ -1064,6 +1064,9 @@ private[effect] final class WorkerThread[P <: AnyRef](
    *   code path can be exercised is through `IO.delay`, which already handles exceptions.
    */
   override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
+    if (BlockOnDetector.Enabled && !blocking) {
+      BlockOnDetector.report(this)
+    }
     prepareForBlocking()
     thunk
   }

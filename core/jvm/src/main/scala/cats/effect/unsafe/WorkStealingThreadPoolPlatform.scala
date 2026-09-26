@@ -23,6 +23,10 @@ import java.time.temporal.ChronoField
 trait WorkStealingThreadPoolPlatform[P <: AnyRef] extends Scheduler {
   this: WorkStealingThreadPool[P] =>
 
+  // When blocking is delegated to virtual threads, never block a worker in place: fibers
+  // running `IO.blocking` fall back to `runtime.blocking`, which is then virtual.
+  private[unsafe] final def virtualBlocking: Boolean = VirtualThreads.BlockingEnabled
+
   override def nowMicros(): Long = {
     val now = Instant.now()
     now.getEpochSecond() * 1000000 + now.getLong(ChronoField.MICRO_OF_SECOND)
